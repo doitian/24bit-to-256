@@ -28,9 +28,22 @@ def print_color(name, rgb):
     background = f"{rgb['r']};{rgb['g']};{rgb['b']}"
     print(f"{name:>6} \033[48;2;{background}m{color} {background:11} \033[0m")
 
+def fatal(message):
+    print(message, file=sys.stderr)
+    return 1
+
 if __name__ == "__main__":
     colors = load_colors()
-    target = parse_hex(sys.argv[1])
+    try:
+        if len(sys.argv[1]) == 6:
+            target = parse_hex(sys.argv[1])
+        else:
+            id = int(sys.argv[1])
+            target = next(filter(lambda x: x["colorId"] == id, colors))["rgb"]
+    except (StopIteration, ValueError):
+        sys.exit(fatal(f'Invalid color: {sys.argv[1]}'))
+    except IndexError:
+        sys.exit(fatal('Requires a color as the parameter'))
 
     n = 5
     top_n: list = [None] * n
@@ -38,6 +51,8 @@ if __name__ == "__main__":
         distance = squared_distance(target, c["rgb"])
         for i in range(n):
             if top_n[i] is None or distance < top_n[i]["distance"]:
+                for j in range(n -1, i, -1):
+                    top_n[j] = top_n[j-1]
                 top_n[i] = {"distance":distance, "id":c["colorId"], "rgb":c["rgb"]}
                 break
 
